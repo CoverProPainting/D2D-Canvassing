@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Door Log — Cover Pro Painting</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <img src="assets/logo.png" class="logo" alt="Cover Pro Painting">
+  <div class="eyebrow">DOOR LOG</div>
+  <h1>Log This Door</h1>
+  <div class="subtitle">Name and street carry over between doors on the same street.</div>
+
+  <form id="doorForm" action="https://script.google.com/macros/s/YOUR_SCRIPT_URL/exec" method="POST" target="hidden_iframe">
+    <input type="hidden" name="form_type" value="Door Log">
+
+    <label>Your name</label>
+    <input type="text" name="Canvasser Name" id="canvasserName" required>
+
+    <label>Street / Neighborhood</label>
+    <input type="text" name="Street / Neighborhood" id="street" required placeholder="e.g. 98th St E">
+
+    <label>House number</label>
+    <input type="text" name="House Number" id="houseNumber" required inputmode="numeric" placeholder="e.g. 4212">
+
+    <label>What happened at the door?</label>
+    <input type="hidden" name="Outcome" id="outcomeField" required>
+    <div class="choice-grid" id="outcomeGrid">
+      <div class="choice-btn" data-value="No Answer">No Answer</div>
+      <div class="choice-btn" data-value="Not Home">Not Home</div>
+      <div class="choice-btn" data-value="Not Interested">Not Interested</div>
+      <div class="choice-btn" data-value="Wants an Estimate">Wants an Estimate</div>
+    </div>
+
+    <div class="section-box hidden" id="estimateSection">
+      <div class="section-title">Get their full info — tell them the office will call to confirm</div>
+
+      <div class="two-col">
+        <div>
+          <label>First name</label>
+          <input type="text" name="First Name" id="firstName">
+        </div>
+        <div>
+          <label>Last name</label>
+          <input type="text" name="Last Name" id="lastName">
+        </div>
+      </div>
+
+      <label>Complete address</label>
+      <input type="text" name="Complete Address" id="address" placeholder="Street, City, State, ZIP">
+
+      <label>Phone number</label>
+      <input type="tel" name="Phone Number" id="phone">
+
+      <label>Email address</label>
+      <input type="email" name="Email Address" id="email">
+
+      <label>1st preferred day &amp; time</label>
+      <div class="two-col">
+        <input type="date" name="1st Preferred Date" id="pref1date">
+        <select name="1st Preferred Time" id="pref1time">
+          <option value="8–10 AM">8–10 AM</option>
+          <option value="10–12 PM">10–12 PM</option>
+          <option value="12–2 PM">12–2 PM</option>
+          <option value="2–4 PM">2–4 PM</option>
+          <option value="4–6 PM">4–6 PM</option>
+          <option value="5–7 PM">5–7 PM</option>
+        </select>
+      </div>
+
+      <label>2nd preferred day &amp; time <span class="optional">(optional)</span></label>
+      <div class="two-col">
+        <input type="date" name="2nd Preferred Date" id="pref2date">
+        <select name="2nd Preferred Time" id="pref2time">
+          <option value="8–10 AM">8–10 AM</option>
+          <option value="10–12 PM">10–12 PM</option>
+          <option value="12–2 PM">12–2 PM</option>
+          <option value="2–4 PM">2–4 PM</option>
+          <option value="4–6 PM">4–6 PM</option>
+          <option value="5–7 PM">5–7 PM</option>
+        </select>
+      </div>
+
+      <label>Which time do they prefer?</label>
+      <input type="hidden" name="Which Time Do They Prefer" id="preferField">
+      <div class="choice-grid" id="preferGrid">
+        <div class="choice-btn" data-value="1st choice">1st choice</div>
+        <div class="choice-btn" data-value="2nd choice">2nd choice</div>
+      </div>
+
+      <label>Notes <span class="optional">(optional)</span></label>
+      <textarea name="Notes" id="notes" rows="2"></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn" disabled>Log Door</button>
+    <div class="confirm-box" id="confirmBox">Logged! Tell them the office will call to confirm.</div>
+    <div class="error-box" id="errorBox">Something went wrong submitting — check your connection and try again.</div>
+  </form>
+
+  <div class="nav-links">
+    <a href="time-clock.html">Time Clock</a> · <a href="new-hire.html">New Hire Info</a>
+  </div>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+  const form = document.getElementById('doorForm');
+  const canvasserName = document.getElementById('canvasserName');
+  const street = document.getElementById('street');
+  const outcomeGrid = document.getElementById('outcomeGrid');
+  const outcomeField = document.getElementById('outcomeField');
+  const estimateSection = document.getElementById('estimateSection');
+  const preferGrid = document.getElementById('preferGrid');
+  const preferField = document.getElementById('preferField');
+  const submitBtn = document.getElementById('submitBtn');
+  const confirmBox = document.getElementById('confirmBox');
+  const errorBox = document.getElementById('errorBox');
+
+  // Restore remembered name/street
+  canvasserName.value = localStorage.getItem('cp_canvasser_name') || '';
+  street.value = localStorage.getItem('cp_street') || '';
+
+  let currentOutcome = '';
+  let currentPrefer = '';
+
+  outcomeGrid.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      outcomeGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentOutcome = btn.dataset.value;
+      outcomeField.value = currentOutcome;
+      const isEstimate = currentOutcome === 'Wants an Estimate';
+      estimateSection.classList.toggle('hidden', !isEstimate);
+      updateRequiredFields(isEstimate);
+      validateForm();
+    });
+  });
+
+  preferGrid.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      preferGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPrefer = btn.dataset.value;
+      preferField.value = currentPrefer;
+      validateForm();
+    });
+  });
+
+  function updateRequiredFields(isEstimate) {
+    ['firstName','lastName','address','phone','email','pref1date'].forEach(id => {
+      document.getElementById(id).required = isEstimate;
+    });
+  }
+
+  function validateForm() {
+    let valid = canvasserName.value.trim() && street.value.trim() &&
+      document.getElementById('houseNumber').value.trim() && currentOutcome;
+    if (currentOutcome === 'Wants an Estimate') {
+      valid = valid &&
+        document.getElementById('firstName').value.trim() &&
+        document.getElementById('lastName').value.trim() &&
+        document.getElementById('address').value.trim() &&
+        document.getElementById('phone').value.trim() &&
+        document.getElementById('email').value.trim() &&
+        document.getElementById('pref1date').value &&
+        currentPrefer;
+    }
+    submitBtn.disabled = !valid;
+  }
+
+  form.addEventListener('input', validateForm);
+
+  form.addEventListener('submit', function(e) {
+    // Not preventing default here -- letting it POST natively into the hidden iframe.
+    // We can't read the cross-domain response, so we optimistically confirm on iframe load.
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging...';
+    errorBox.classList.remove('show');
+    localStorage.setItem('cp_canvasser_name', canvasserName.value);
+    localStorage.setItem('cp_street', street.value);
+  });
+
+  document.getElementById('hidden_iframe').addEventListener('load', function() {
+    if (!submitBtn.disabled) return; // ignore the initial blank iframe load on page open
+    confirmBox.classList.add('show');
+    const keepName = canvasserName.value;
+    const keepStreet = street.value;
+    form.reset();
+    canvasserName.value = keepName;
+    street.value = keepStreet;
+    outcomeGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    preferGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    estimateSection.classList.add('hidden');
+    currentOutcome = '';
+    currentPrefer = '';
+    submitBtn.textContent = 'Log Door';
+    validateForm();
+    setTimeout(() => confirmBox.classList.remove('show'), 4000);
+  });
+</script>
+</body>
+</html>

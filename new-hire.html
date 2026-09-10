@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Hire Info — Cover Pro Painting</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <img src="assets/logo.png" class="logo" alt="Cover Pro Painting">
+  <div class="eyebrow">ONE-TIME SETUP</div>
+  <h1>New Hire Info</h1>
+  <div class="subtitle">Just once, at onboarding.</div>
+
+  <form id="hireForm" action="https://script.google.com/macros/s/YOUR_SCRIPT_URL/exec" method="POST" target="hidden_iframe">
+    <input type="hidden" name="form_type" value="New Hire Info">
+
+    <label>Full name</label>
+    <input type="text" name="Full Name" required>
+
+    <label>Phone number</label>
+    <input type="tel" name="Phone Number" required>
+
+    <label>Email address</label>
+    <input type="email" name="Email Address" required>
+
+    <label>Physical address</label>
+    <input type="text" name="Physical Address" required>
+
+    <label>Emergency contact name</label>
+    <input type="text" name="Emergency Contact Name" required>
+
+    <label>Emergency contact phone number</label>
+    <input type="tel" name="Emergency Contact Phone" required>
+
+    <label>Shirt size</label>
+    <input type="hidden" name="Shirt Size" id="shirtField" required>
+    <div class="choice-grid" id="shirtGrid">
+      <div class="choice-btn" data-value="XS">XS</div>
+      <div class="choice-btn" data-value="S">S</div>
+      <div class="choice-btn" data-value="M">M</div>
+      <div class="choice-btn" data-value="L">L</div>
+      <div class="choice-btn" data-value="XL">XL</div>
+      <div class="choice-btn" data-value="XXL">XXL</div>
+    </div>
+
+    <label>Payment app</label>
+    <input type="hidden" name="Payment App" id="paymentField" required>
+    <div class="choice-grid" id="paymentGrid">
+      <div class="choice-btn" data-value="Venmo">Venmo</div>
+      <div class="choice-btn" data-value="Cash App">Cash App</div>
+      <div class="choice-btn" data-value="Zelle">Zelle</div>
+    </div>
+
+    <label>Payment handle / username / phone</label>
+    <input type="text" name="Payment Handle" required placeholder="Whatever you'd give someone to send you money">
+
+    <button type="submit" class="submit-btn" id="submitBtn" disabled>Submit</button>
+    <div class="confirm-box" id="confirmBox">Submitted — thank you!</div>
+    <div class="error-box" id="errorBox">Something went wrong — check your connection and try again.</div>
+  </form>
+
+  <div class="nav-links">
+    <a href="door-log.html">Door Log</a> · <a href="time-clock.html">Time Clock</a>
+  </div>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+  const form = document.getElementById('hireForm');
+  const shirtGrid = document.getElementById('shirtGrid');
+  const shirtField = document.getElementById('shirtField');
+  const paymentGrid = document.getElementById('paymentGrid');
+  const paymentField = document.getElementById('paymentField');
+  const submitBtn = document.getElementById('submitBtn');
+  const confirmBox = document.getElementById('confirmBox');
+  const errorBox = document.getElementById('errorBox');
+
+  let shirt = '', payment = '';
+
+  shirtGrid.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      shirtGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      shirt = btn.dataset.value;
+      shirtField.value = shirt;
+      validateForm();
+    });
+  });
+
+  paymentGrid.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      paymentGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      payment = btn.dataset.value;
+      paymentField.value = payment;
+      validateForm();
+    });
+  });
+
+  function validateForm() {
+    const required = form.querySelectorAll('input[required]:not([type="hidden"])');
+    let allFilled = true;
+    required.forEach(f => { if (!f.value.trim()) allFilled = false; });
+    submitBtn.disabled = !(allFilled && shirt && payment);
+  }
+  form.addEventListener('input', validateForm);
+
+  form.addEventListener('submit', function(e) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    errorBox.classList.remove('show');
+  });
+
+  document.getElementById('hidden_iframe').addEventListener('load', function() {
+    if (!submitBtn.disabled) return;
+    confirmBox.classList.add('show');
+    form.reset();
+    shirtGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    paymentGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    shirt = ''; payment = '';
+    submitBtn.textContent = 'Submit';
+    validateForm();
+  });
+</script>
+</body>
+</html>

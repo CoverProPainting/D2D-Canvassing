@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Clock — Cover Pro Painting</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <img src="assets/logo.png" class="logo" alt="Cover Pro Painting">
+  <div class="eyebrow">TIME CLOCK</div>
+  <h1>Clock In / Out</h1>
+  <div class="subtitle">Same name each time so your hours add up correctly.</div>
+
+  <form id="clockForm" action="https://script.google.com/macros/s/YOUR_SCRIPT_URL/exec" method="POST" target="hidden_iframe">
+    <input type="hidden" name="form_type" value="Time Clock">
+    <input type="hidden" name="Timestamp" id="timestampField">
+
+    <label>Your name</label>
+    <input type="text" name="Canvasser Name" id="canvasserName" required>
+
+    <label>Action</label>
+    <input type="hidden" name="Action" id="actionField" required>
+    <div class="choice-grid" id="actionGrid">
+      <div class="choice-btn" data-value="Clock In">Clock In</div>
+      <div class="choice-btn" data-value="Clock Out">Clock Out</div>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn" disabled>Submit</button>
+    <div class="confirm-box" id="confirmBox">Recorded!</div>
+    <div class="error-box" id="errorBox">Something went wrong — check your connection and try again.</div>
+  </form>
+
+  <div class="nav-links">
+    <a href="door-log.html">Door Log</a> · <a href="new-hire.html">New Hire Info</a>
+  </div>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+  const form = document.getElementById('clockForm');
+  const canvasserName = document.getElementById('canvasserName');
+  const actionGrid = document.getElementById('actionGrid');
+  const actionField = document.getElementById('actionField');
+  const submitBtn = document.getElementById('submitBtn');
+  const confirmBox = document.getElementById('confirmBox');
+  const errorBox = document.getElementById('errorBox');
+
+  canvasserName.value = localStorage.getItem('cp_canvasser_name') || '';
+
+  let currentAction = '';
+
+  actionGrid.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      actionGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentAction = btn.dataset.value;
+      actionField.value = currentAction;
+      validateForm();
+    });
+  });
+
+  function validateForm() {
+    submitBtn.disabled = !(canvasserName.value.trim() && currentAction);
+  }
+  form.addEventListener('input', validateForm);
+
+  form.addEventListener('submit', function(e) {
+    document.getElementById('timestampField').value = new Date().toLocaleString();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    errorBox.classList.remove('show');
+    localStorage.setItem('cp_canvasser_name', canvasserName.value);
+  });
+
+  document.getElementById('hidden_iframe').addEventListener('load', function() {
+    if (!submitBtn.disabled) return;
+    confirmBox.classList.add('show');
+    actionGrid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    currentAction = '';
+    submitBtn.textContent = 'Submit';
+    validateForm();
+    setTimeout(() => confirmBox.classList.remove('show'), 3000);
+  });
+</script>
+</body>
+</html>
